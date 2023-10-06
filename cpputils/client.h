@@ -41,6 +41,8 @@ typedef struct
     socket_t sockets[MAX_SOCKET_CONNECTIONS]; 
 } connection_manager; 
 
+
+// in the calling state, make sure there is ONLY ONE connection_manager
 connection_manager create_connection_manager()
 {
     connection_manager cm; 
@@ -56,7 +58,7 @@ connection_manager create_connection_manager()
 // any issues will cause the function to return an error-indicating socket
 // TODO: maybe create error logfile if things go wrong
 int add_connection(connection_manager* manager, int connection_id, 
-                    char* id, int port) 
+                    char* ip, int port) 
 {
     if (connection_id < 0 || connection_id > MAX_SOCKET_CONNECTIONS - 1) {
         return -1; 
@@ -96,19 +98,29 @@ int send()
 
 }
 
-int recieve() {
+int recieve()
+{
 
 }
 
-int remove_connection(socket_t sckt) 
+// close a socket in the connection manager
+// if it is the last socket, do appropriate cleanup 
+int remove_connection(connection_manager* manager, int connection_id) 
 {
+    int temp; 
     #ifdef _WIN32
-        int temp = closesocket(sckt); 
-        WSACleanup();
-        return temp;  
+        temp = closesocket(manager->sockets[connection_id]);   
     #else
-        return close(sckt); 
+        temp = close(manager->sockets[connection_id]); 
     #endif
+
+    if (manager->nActive == 1) {
+        #ifdef _WIN32
+            WSACleanup(); 
+        #endif
+    }
+
+    return temp; 
 }
 
 #endif
