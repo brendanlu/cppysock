@@ -1,12 +1,15 @@
+#include <stdlib.h>
 #ifndef SIMPLE_SOCKET
 #define SIMPLE_SOCKET
+
+#define MAX_SOCKET_CONNECTIONS 5
 
 // AF_INET:  IPv4
 // AF_INET6: IPv6
 //
-// SOCK_STREAM: "Stream Sockets"
+// SOCK_STREAM: "Stream socket_ts"
 //  Maintains open connection and uses TCP
-// SOCK_DGRAM:  "Datafram Sockets"
+// SOCK_DGRAM:  "Datafram socket_ts"
 //  Connectionless; fire and forget and uses UDP
 //
 // IPPROTO_TCP: Specify TCP protocol
@@ -22,45 +25,70 @@
 #ifdef _WIN32
     #include <winsock.h>
     #include <ws2tcpip.h>
-    typedef SOCKET Socket; 
+    typedef SOCKET socket_t; 
     #define ERROR_SOCKET INVALID_SOCKET
 #else
     #include <sys/socket.h>
     #include <netinet/in.h>
     #include <unistd.h>
-    typedef int Socket; 
+    typedef int socket_t; 
     #define ERROR_SOCKET -1
 #endif
 
+typedef struct 
+{
+    int nActive;
+    socket_t sockets[MAX_SOCKET_CONNECTIONS]; 
+} connection_manager; 
+
+connection_manager create_connection_manager()
+{
+    connection_manager cm; 
+
+    cm.nActive = 0; 
+    for (int i=0; i<MAX_SOCKET_CONNECTIONS; ++i) {
+        cm.sockets[i] = ERROR_SOCKET; 
+    }
+
+    return cm; 
+}
+
 // any issues will cause the function to return an error-indicating socket
 // TODO: maybe create error logfile if things go wrong
-Socket connect() 
+int add_connection(connection_manager* manager, int connection_id, 
+                    char* id, int port) 
 {
-    // initialize winsock API on windows
-    // nothing needed for POSIX-style sockets
-    int initStatus;
-    #ifdef _WIN32
-        WSADATA wsaData; 
-        // check for appropriate initialization
-        if (WSAStartup(MAKEWORD(2,2), &wsaData)!= 0) {
-            return ERROR_SOCKET;
-        }
-        // check winsock version 2.2 is available
-        if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2) {
-            WSACleanup(); 
-            return ERROR_SOCKET;
-        }
-    #endif
+    if (connection_id < 0 || connection_id > MAX_SOCKET_CONNECTIONS - 1) {
+        return -1; 
+    }
 
+    if (manager->nActive == 0) {
+        // initialize winsock API on windows
+        // nothing needed for POSIX-style sockets
+        #ifdef _WIN32
+            WSADATA wsaData; 
+            // check for appropriate initialization
+            if (WSAStartup(MAKEWORD(2,2), &wsaData)!= 0) {
+                return -1;
+            }
+            // check winsock version 2.2 is available
+            if (LOBYTE(wsaData.wVersion) != 2 || 
+                HIBYTE(wsaData.wVersion) != 2) {
+                WSACleanup(); 
+                return -1;
+            }
+        #endif
+    }
 
-    Socket sckt = socket(CONFIG_IPV, CONFIG_SOCKET_TYPE, CONFIG_PROTOCOL);
+    manager->sockets[connection_id] = socket(
+        CONFIG_IPV, CONFIG_SOCKET_TYPE, CONFIG_PROTOCOL
+    );
 
     #ifdef _WIN32
         // configure the connection location in the winsock struct
         sockaddr_in addrConfig; 
         addrConfig.sin_family = CONFIG_IPV; 
     #endif
-    
 }
 
 int send() 
@@ -72,7 +100,7 @@ int recieve() {
 
 }
 
-int disconnect(Socket sckt) 
+int remove_connection(socket_t sckt) 
 {
     #ifdef _WIN32
         int temp = closesocket(sckt); 
