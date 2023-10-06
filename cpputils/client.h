@@ -1,5 +1,19 @@
-#ifndef SOCKET_TO_PY
-#define SOCKET_TO_PY
+#ifndef SIMPLE_SOCKET
+#define SIMPLE_SOCKET
+
+// SOCK_STREAM: "Stream Sockets"
+//  Maintains open connection and uses TCP
+// SOCK_DGRAM:  "Datafram Sockets"
+//  Connectionless. Fire and forget, and uses UDP
+//
+// AF_INET:  IPv4
+// AF_INET6: IPv6
+//
+// IPPROTO_TCP: Specify TCP protocol
+//  There are others for internet protocols, raw, and UDP
+#define CONFIG_IP_VERSION      AF_INET
+#define CONFIG_SOCKET_TYPE     SOCK_STREAM
+#define CONFIG_PROTOCOL        IPPROTO_TCP
 
 // gcc preprocessor macros
 //
@@ -18,26 +32,39 @@
     #define ERROR_SOCKET -1
 #endif
 
-// any issues in this function will return the respective error socket values
-Socket connect() {
-    // for windows, one needs to initialize Winsock
-    int initStatus;
-    #ifdef _WIN32
-        WSADATA wsaData; 
-        initStatus = WSAStartup(MAKEWORD(2,2), &wsaData); 
-    #else
-        initStatus = 0; 
-    #endif
+// any issues will cause the function to return an error-indicating socket
+// TODO: maybe create error logfile if things go wrong
+Socket connect() 
+{
+// initialize winsock API on windows
+// nothing needed for POSIX-style sockets
+int initStatus;
+#ifdef _WIN32
+    WSADATA wsaData; 
+    // check for appropriate initialization
+    if (WSAStartup(MAKEWORD(2,2), &wsaData)!= 0) {
+        return ERROR_SOCKET;
+    }
+    // check winsock version 2.2 is available
+    if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2) {
+        WSACleanup(); 
+        return ERROR_SOCKET;
+    }
+#endif
 
-    if (initStatus != 0) {
-        return ERROR_SOCKET; 
-    }
-    else {
-        return socket(AF_INET, SOCK_STREAM, 0);
-    }
+
+Socket sckt = socket(CONFIG_IP_VERSION, CONFIG_SOCKET_TYPE, CONFIG_PROTOCOL);
+
+#ifdef _WIN32
+    // configure the connection location in the winsock struct
+    sockaddr_in addrConfig; 
+    addrConfig.sin_family = CONFIG_IP_VERSION; 
+#endif
+    
 }
 
-int send() {
+int send() 
+{
 
 }
 
@@ -45,8 +72,14 @@ int recieve() {
 
 }
 
-void disconnect() {
-
+int disconnect(Socket sckt) 
+{
+#ifdef _WIN32
+    return closesocket(sckt); 
+    WSACleanup(); 
+#else
+    return close(sckt); 
+#endif
 }
 
 #endif
