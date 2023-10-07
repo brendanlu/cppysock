@@ -3,8 +3,6 @@
 
 #include <stdlib.h>
 
-#include "../../utils/parse_json_config.h"
-
 #define MAX_SOCKET_CONNECTIONS 5
 
 // AF_INET:  IPv4
@@ -107,13 +105,13 @@ int add_connection(connection_manager* manager, int connection_id,
     int addrStatus; 
     
     #if CONFIG_IPV == AF_INET // ipv4
-        sockaddr_in addrConfig; 
+        struct sockaddr_in addrConfig; 
         memset(&addrConfig, 0, sizeof(addrConfig)); 
         addrConfig.sin_family = AF_INET; 
         addrConfig.sin_port = htons(port); 
         addrStatus = inet_pton(AF_INET, ip, &(addrConfig.sin_addr)); 
     #else // assume ipv6
-        sockaddr_in6 addrConfig; 
+        struct sockaddr_in6 addrConfig; 
         memset(&addrConfig, 0, sizeof(addrConfig)); 
         addrConfig.sin6_family = AF_INET6;
         addrConfig.sin6_port = htons(port); 
@@ -137,7 +135,7 @@ int add_connection(connection_manager* manager, int connection_id,
     // so the configured port is the one being targeted
     //
     // the success return value should be 0 for winsock and posix-style (?)
-    if (connect(manager->sockets[connection_id], (sockaddr*)&addrConfig, 
+    if (connect(manager->sockets[connection_id], (struct sockaddr*)&addrConfig, 
         sizeof(addrConfig)) != 0) {
             #ifdef _WIN32
                 if (manager->n_active == 0) {
@@ -152,14 +150,16 @@ int add_connection(connection_manager* manager, int connection_id,
     }
 }
 
-int send() 
+int send(connection_manager* manager, int connection_id, const void* data, 
+            int len, int flag)  
 {
-
+    return send(manager->sockets[connection_id], (const char*)data, len, flag);  
 }
 
-int recieve()
+int recieve(connection_manager* manager, int connection_id, char* buf, 
+            int len, int flag)
 {
-
+    return recv(manager->sockets[connection_id], buf, len, flag); 
 }
 
 // close a socket in the connection manager
