@@ -1,6 +1,9 @@
+#ifndef SIMPLE_SOCKET_H
+#define SIMPLE_SOCKET_H
+
 #include <stdlib.h>
-#ifndef SIMPLE_SOCKET
-#define SIMPLE_SOCKET
+
+#include "../../utils/parse_json_config.h"
 
 #define MAX_SOCKET_CONNECTIONS 5
 
@@ -42,10 +45,10 @@
 // it is the programmers responsibility to match all calls to add_connection
 // to remove_connection
 //
-// ensure that connection_manager.nActive is 0 at the end of the session
+// ensure that connection_manager.n_active is 0 at the end of the session
 typedef struct 
 {
-    int nActive;
+    int n_active;
     socket_t sockets[MAX_SOCKET_CONNECTIONS]; 
 } connection_manager; 
 
@@ -55,7 +58,7 @@ connection_manager create_connection_manager()
 {
     connection_manager cm; 
 
-    cm.nActive = 0; 
+    cm.n_active = 0; 
     for (int i=0; i<MAX_SOCKET_CONNECTIONS; ++i) {
         cm.sockets[i] = ERROR_SOCKET; 
     }
@@ -77,7 +80,7 @@ int add_connection(connection_manager* manager, int connection_id,
     // initialize winsock API on windows
     // nothing needed for POSIX-style sockets
     #ifdef _WIN32
-        if (manager->nActive == 0) {
+        if (manager->n_active == 0) {
             WSADATA wsaData; 
             // check for appropriate initialization
             if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
@@ -120,7 +123,7 @@ int add_connection(connection_manager* manager, int connection_id,
     if (addrStatus <= 0) {
         // on error make sure we free winsock resources if no other connections
         #ifdef _WIN32
-            if (manager->nActive == 0) {
+            if (manager->n_active == 0) {
                 WSACleanup(); 
             }
         #endif
@@ -137,14 +140,14 @@ int add_connection(connection_manager* manager, int connection_id,
     if (connect(manager->sockets[connection_id], (sockaddr*)&addrConfig, 
         sizeof(addrConfig)) != 0) {
             #ifdef _WIN32
-                if (manager->nActive == 0) {
+                if (manager->n_active == 0) {
                     WSACleanup(); 
                 }
             #endif
             return -1;     
     }
     else {
-        manager->nActive += 1; 
+        manager->n_active += 1; 
         return 0; 
     }
 }
@@ -172,11 +175,11 @@ int remove_connection(connection_manager* manager, int connection_id)
 
     if (closeStatus == 0) {
         // decrement the connections count
-        manager->nActive -= 1; 
+        manager->n_active -= 1; 
 
         // on windows cleanup the winsock system resources if 0 connections
         #ifdef _WIN32
-            if (manager->nActive == 0) {
+            if (manager->n_active == 0) {
                 WSACleanup(); 
             }
         #endif
@@ -184,7 +187,7 @@ int remove_connection(connection_manager* manager, int connection_id)
 
     // if this is not 0 the caller can assume their socket was not closed
     //
-    // this can always be checked by querying nActive
+    // this can always be checked by querying n_active
     return closeStatus; 
 
 }
