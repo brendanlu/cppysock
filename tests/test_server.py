@@ -7,7 +7,7 @@ BUFFER_SIZE = 1024
 class TestHandler(socketserver.BaseRequestHandler):
     def handle(self) -> None:
         self.data = self.request.recv(BUFFER_SIZE).strip()
-        print(f"{self.client_address[0]}: {self.data})")
+        print(f"{self.client_address[0]}: {self.data}")
         self.request.sendall("Server ping-back".encode("utf-8"))
 
 
