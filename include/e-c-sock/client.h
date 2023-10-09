@@ -52,7 +52,7 @@ typedef struct
 
 
 // in the calling state, make sure there is ONLY ONE connection_manager
-connection_manager create_connection_manager()
+inline connection_manager create_connection_manager()
 {
     connection_manager cm; 
 
@@ -66,7 +66,7 @@ connection_manager create_connection_manager()
 
 // any issues will cause the function to return a nonzero error code for now
 // TODO: maybe create error logfile if things go wrong for error tracking
-int add_connection(connection_manager* manager, int connection_id, 
+inline int add_connection(connection_manager* manager, int connection_id, 
                     const char* ip, int port) 
 {
     // check valid connection_id relative to the maximum number of allowed 
@@ -150,13 +150,13 @@ int add_connection(connection_manager* manager, int connection_id,
     }
 }
 
-int send(connection_manager* manager, int connection_id, const void* data, 
+inline int send(connection_manager* manager, int connection_id, const void* data, 
             int len, int flag)  
 {
     return send(manager->sockets[connection_id], (const char*)data, len, flag);  
 }
 
-int recieve(connection_manager* manager, int connection_id, char* buf, 
+inline int recieve(connection_manager* manager, int connection_id, char* buf, 
             int len, int flag)
 {
     return recv(manager->sockets[connection_id], buf, len, flag); 
@@ -164,7 +164,7 @@ int recieve(connection_manager* manager, int connection_id, char* buf,
 
 // close a socket in the connection manager
 // if it is the last socket, do appropriate cleanup 
-int remove_connection(connection_manager* manager, int connection_id) 
+inline int remove_connection(connection_manager* manager, int connection_id) 
 {
     int closeStatus; 
     #ifdef _WIN32
