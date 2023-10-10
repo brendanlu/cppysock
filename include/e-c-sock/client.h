@@ -75,6 +75,11 @@ inline int add_connection(connection_manager* manager, int connection_id,
         return -1; 
     }
 
+    // check we are not overwriting existing connected socket
+    if (manager->sockets[connection_id] != ERROR_SOCKET) {
+        return -1; 
+    }
+
     // initialize winsock API on windows
     // nothing needed for POSIX-style sockets
     #ifdef _WIN32
@@ -176,6 +181,9 @@ inline int remove_connection(connection_manager* manager, int connection_id)
     if (closeStatus == 0) {
         // decrement the connections count
         manager->n_active -= 1; 
+
+        // reset
+        manager->sockets[connection_id] = ERROR_SOCKET; 
 
         // on windows cleanup the winsock system resources if 0 connections
         #ifdef _WIN32
