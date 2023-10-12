@@ -8,4 +8,3 @@ for %%i in (*.exe) do (
 )
 
 echo Cleanup complete.
-pause
