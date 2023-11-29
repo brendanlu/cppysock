@@ -8,19 +8,19 @@ BUFFER_SIZE = 1024
 
 class CSVHandler(socketserver.BaseRequestHandler):
     def __init__(self, request, client_address, server):
-        self.byte_buffer = b""
+        self.byte_buffer = BytesIO()
         self.df = pd.DataFrame()
         super(CSVHandler, self).__init__(request, client_address, server)
 
     def handle(self) -> None:
-        self.data = b""
         while True:
-            self.data = self.request.recv(BUFFER_SIZE)
-            if not self.data:
+            data = self.request.recv(BUFFER_SIZE)
+            if not data:
                 break
             else:
-                self.byte_buffer += self.data
-        self.df = pd.read_csv(BytesIO(self.byte_buffer))
+                self.byte_buffer.write(data)
+        self.byte_buffer.seek(0)
+        self.df = pd.read_csv(self.byte_buffer)
         print(self.df)
 
 
